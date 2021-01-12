@@ -44,6 +44,14 @@ class ListFragmetFragment : Fragment() {
             layoutManager = GridLayoutManager(context, 2)
             adapter = listAdapter
         }
+
+        refreshLayout.setOnRefreshListener {
+            animalList.visibility = View.GONE
+            textViewEror.visibility = View.GONE
+            listProgressBar.visibility = View.GONE
+            viewModel.refresh()
+            refreshLayout.isRefreshing = false
+        }
     }
 
 
