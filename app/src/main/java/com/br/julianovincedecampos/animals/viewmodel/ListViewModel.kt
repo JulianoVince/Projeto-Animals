@@ -1,11 +1,13 @@
 package com.br.julianovincedecampos.animals.viewmodel
 
 import android.app.Application
+import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.br.julianovincedecampos.animals.model.Animal
 import com.br.julianovincedecampos.animals.model.AnimalService
 import com.br.julianovincedecampos.animals.model.ApiKey
+import com.br.julianovincedecampos.animals.util.SharedPreferencesHelper
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.observers.DisposableSingleObserver
@@ -20,7 +22,23 @@ class ListViewModel(application: Application) : AndroidViewModel(application) {
     private val disposable = CompositeDisposable()
     private val apiService = AnimalService()
 
+    private val prefs = SharedPreferencesHelper(context = getApplication())
+
+    private var invalidApiKey = false
+
     fun refresh() {
+        invalidApiKey = false
+        loading.value = true
+        val key = prefs.getApiKey()
+
+        if (key.isNullOrEmpty()) {
+            getKey()
+        } else {
+            getAnimals(key)
+        }
+    }
+
+    fun hardRefresh(){
         loading.value = true
         getKey()
     }
@@ -36,6 +54,7 @@ class ListViewModel(application: Application) : AndroidViewModel(application) {
                             loadError.value = true
                             loading.value = false
                         } else {
+                            prefs.saveApiKey(key = keyValue.key)
                             getAnimals(key = keyValue.key)
                         }
                     }
@@ -56,6 +75,7 @@ class ListViewModel(application: Application) : AndroidViewModel(application) {
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeWith(object : DisposableSingleObserver<List<Animal>>() {
+
                     override fun onSuccess(listBackEnd: List<Animal>) {
                         loadError.value = false
                         loading.value = false
@@ -63,12 +83,16 @@ class ListViewModel(application: Application) : AndroidViewModel(application) {
                     }
 
                     override fun onError(e: Throwable) {
-                        e.printStackTrace()
-                        loading.value = false
-                        animals.value = null
-                        loadError.value = true
+                        if (!invalidApiKey) {
+                            invalidApiKey = true
+                            getKey()
+                        } else {
+                            e.printStackTrace()
+                            loading.value = false
+                            animals.value = null
+                            loadError.value = true
+                        }
                     }
-
                 })
         )
     }

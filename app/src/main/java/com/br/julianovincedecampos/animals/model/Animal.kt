@@ -3,8 +3,8 @@ package com.br.julianovincedecampos.animals.model
 import com.google.gson.annotations.SerializedName
 
 data class ApiKey(
-    val message: String,
-    val key: String
+    val message: String?,
+    val key: String?
 )
 
 data class Animal(
