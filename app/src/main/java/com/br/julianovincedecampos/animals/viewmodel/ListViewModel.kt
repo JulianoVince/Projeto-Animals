@@ -20,6 +20,10 @@ import javax.inject.Inject
 
 class ListViewModel(application: Application) : AndroidViewModel(application) {
 
+    constructor(application: Application, test: Boolean = true) : this(application) {
+        inject = true
+    }
+
     val animals by lazy { MutableLiveData<List<Animal>>() }
     val loadError by lazy { MutableLiveData<Boolean>() }
     val loading by lazy { MutableLiveData<Boolean>() }
@@ -33,14 +37,18 @@ class ListViewModel(application: Application) : AndroidViewModel(application) {
     @field:TypeOfContext(CONTEXT_APP)
     lateinit var prefs: SharedPreferencesHelper
 
-    init {
-        DaggerViewModelComponent.builder().appModule(AppModule(getApplication())).build()
-            .inject(this)
+    fun inject() {
+        if (!inject) {
+            DaggerViewModelComponent.builder().appModule(AppModule(getApplication())).build()
+                .inject(this)
+        }
     }
 
     private var invalidApiKey = false
+    private var inject = false
 
     fun refresh() {
+        inject()
         invalidApiKey = false
         loading.value = true
         val key = prefs.getApiKey()
@@ -53,6 +61,7 @@ class ListViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun hardRefresh() {
+        inject()
         loading.value = true
         getKey()
     }
@@ -92,8 +101,8 @@ class ListViewModel(application: Application) : AndroidViewModel(application) {
 
                     override fun onSuccess(listBackEnd: List<Animal>) {
                         loadError.value = false
-                        loading.value = false
                         animals.value = listBackEnd
+                        loading.value = false
                     }
 
                     override fun onError(e: Throwable) {
